@@ -88,13 +88,17 @@ with left_col:
         st.markdown("### 🏨 Hotel Bookings")
         try:
             conn = get_connection()
-            hotels_df = pd.read_sql("SELECT hotel_name, address, check_in, check_out, confirmation_code, total_cost FROM hotels WHERE trip_id = %s;", conn, params=(active_trip_id,))
+            hotels_df = pd.read_sql("SELECT hotel_name, address, maps_link, check_in, check_out, confirmation_code, total_cost FROM hotels WHERE trip_id = %s;", conn, params=(active_trip_id,))
             conn.close()
         except Exception:
             hotels_df = pd.DataFrame()
 
         if not hotels_df.empty:
-            st.dataframe(hotels_df, hide_index=True, use_container_width=True)
+            for _, row in hotels_df.iterrows():
+                st.write(f"**{row['hotel_name']}** ({row['check_in']} to {row['check_out']})")
+                if row['maps_link']:
+                    st.markdown(f"🗺️ [Google Maps]({row['maps_link']})", unsafe_allow_html=True)
+                st.divider()
         else:
             st.info("No hotel bookings added yet.")
 
