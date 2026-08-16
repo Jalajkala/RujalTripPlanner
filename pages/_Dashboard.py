@@ -45,7 +45,7 @@ with col1:
 
 with col2:
     st.metric("Destination", active_trip['destination'])
-    st.metric("Total Budget", f"${active_trip['total_budget']:,.2f}" if active_trip['total_budget'] else "$0.00")
+    st.metric("Total Budget", f"₹{active_trip['total_budget']:,.2f}" if active_trip['total_budget'] else "₹0.00")
 
 with col3:
     try:
@@ -55,7 +55,7 @@ with col3:
         total_spent = exp_sum if exp_sum else 0.0
     except Exception:
         total_spent = 0.0
-    st.metric("Total Expenses Incurred", f"${total_spent:,.2f}")
+    st.metric("Total Expenses Incurred", f"₹{total_spent:,.2f}")
 
 st.divider()
 
