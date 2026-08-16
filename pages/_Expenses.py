@@ -31,7 +31,7 @@ else:
     with st.form("add_expense_form", clear_on_submit=True):
         e1, e2, e3 = st.columns(3)
         title = e1.text_input("Expense Title (e.g., Dinner at Port)")
-        amount = e2.number_input("Amount ($)", min_value=0.01)
+        amount = e2.number_input("Amount (₹)", min_value=0.01)
         paid_by_name = e3.selectbox("Paid By", options=list(member_dict.keys()))
         
         e4, e5 = st.columns(2)
@@ -71,7 +71,7 @@ else:
         num_members = len(trip_members_df)
         fair_share = total_spent / num_members if num_members > 0 else 0
         
-        st.write(f"**Total Spent:** ${total_spent:,.2f} | **Fair Share per Person ({num_members} members):** ${fair_share:,.2f}")
+       st.write(f"**Total Spent:** ₹{total_spent:,.2f} | **Fair Share per Person ({num_members} members):** ₹{fair_share:,.2f}")
         
         paid_per_member = expenses_df.groupby("paid_by")["amount"].sum().to_dict()
         
