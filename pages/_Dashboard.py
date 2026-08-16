@@ -37,6 +37,14 @@ try:
 except Exception:
     days_to_trip = 0
 
+# Format dates to dd-mmm-yy (e.g., 15-Oct-26)
+try:
+    formatted_start = pd.to_datetime(active_trip['start_date']).strftime('%d-%b-%y')
+    formatted_end = pd.to_datetime(active_trip['end_date']).strftime('%d-%b-%y')
+    travel_dates_str = f"{formatted_start} to {formatted_end}"
+except Exception:
+    travel_dates_str = f"{active_trip['start_date']} to {active_trip['end_date']}"
+
 try:
     conn = get_connection()
     exp_sum = pd.read_sql("SELECT SUM(amount) as total FROM expenses WHERE trip_id = %s;", conn, params=(active_trip_id,)).iloc[0]['total']
@@ -52,7 +60,7 @@ with col1:
         st.metric("⏳ Countdown", f"{days_to_trip} Days" if days_to_trip >= 0 else "Trip Completed")
 with col2:
     with st.container(border=True):
-        st.metric("📅 Travel Dates", f"{active_trip['start_date']} to {active_trip['end_date']}")
+        st.metric("📅 Travel Dates", travel_dates_str)
 with col3:
     with st.container(border=True):
         st.metric("💸 Total Expenses Incurred", f"₹{total_spent:,.2f}")
