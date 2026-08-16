@@ -118,7 +118,7 @@ with left_col:
             st.info("No travel bookings added yet.")
 
 with right_col:
-    # Checklist Card
+    
     # Checklist Card
     with st.container(border=True):
         st.markdown("### ✅ Checklist Progress")
@@ -151,6 +151,24 @@ with right_col:
             
             st.progress(progress_val)
             st.caption(f"**{completed_tasks}** of **{total_tasks}** tasks completed.")
+            
+            # Styling function for text-only color coding
+            def color_status(val):
+                if val == 'Completed':
+                    return 'color: #2e7d32; font-weight: bold;'  # Green text
+                elif val == 'Pending':
+                    return 'color: #ef6c00; font-weight: bold;'  # Amber text
+                elif val == 'In Progress':
+                    return 'color: #1565c0; font-weight: bold;'  # Blue text
+                return ''
+
+            if 'status' in tasks_df.columns:
+                styled_df = tasks_df.style.map(color_status, subset=['status'])
+                st.dataframe(styled_df, hide_index=True, use_container_width=True)
+            else:
+                st.dataframe(tasks_df, hide_index=True, use_container_width=True)
+        else:
+            st.info("No preparation tasks added yet.")
             
             # Styling function for status color coding
             def color_status(val):
