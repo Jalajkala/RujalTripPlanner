@@ -119,6 +119,7 @@ with left_col:
 
 with right_col:
     # Checklist Card
+    # Checklist Card
     with st.container(border=True):
         st.markdown("### ✅ Checklist Progress")
         try:
@@ -131,16 +132,41 @@ with right_col:
             """, conn, params=(active_trip_id,))
             conn.close()
         except Exception:
-            tasks_df = pd.DataFrame()
+            try:
+                conn = get_connection()
+                tasks_df = pd.read_sql("""
+                    SELECT c.task, c.category, fm.name as assigned_to, 'Pending' as status 
+                    FROM checklist c 
+                    LEFT JOIN family_members fm ON c.assigned_to = fm.id 
+                    WHERE c.trip_id = %s;
+                """, conn, params=(active_trip_id,))
+                conn.close()
+            except Exception:
+                tasks_df = pd.DataFrame()
 
         if not tasks_df.empty:
             total_tasks = len(tasks_df)
-            completed_tasks = int((tasks_df['status'] == 'Completed').sum())
+            completed_tasks = int((tasks_df['status'] == 'Completed').sum()) if 'status' in tasks_df.columns else 0
             progress_val = float(completed_tasks / total_tasks) if total_tasks > 0 else 0.0
             
             st.progress(progress_val)
             st.caption(f"**{completed_tasks}** of **{total_tasks}** tasks completed.")
-            st.dataframe(tasks_df, hide_index=True, use_container_width=True)
+            
+            # Styling function for status color coding
+            def color_status(val):
+                if val == 'Completed':
+                    return 'color: #1b5e20; background-color: #e8f5e9; font-weight: bold;'  # Green
+                elif val == 'Pending':
+                    return 'color: #e65100; background-color: #fff3e0; font-weight: bold;'  # Amber/Orange
+                elif val == 'In Progress':
+                    return 'color: #0d47a1; background-color: #e3f2fd; font-weight: bold;'  # Blue
+                return ''
+
+            if 'status' in tasks_df.columns:
+                styled_df = tasks_df.style.map(color_status, subset=['status'])
+                st.dataframe(styled_df, hide_index=True, use_container_width=True)
+            else:
+                st.dataframe(tasks_df, hide_index=True, use_container_width=True)
         else:
             st.info("No preparation tasks added yet.")
 
