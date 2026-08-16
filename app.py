@@ -149,7 +149,7 @@ if trip_options[selected_trip_label] is None:
         destination = st.text_input("Destination")
         start_date = st.date_input("Start Date", value=date.today())
         end_date = st.date_input("End Date", value=date.today())
-        total_budget = st.number_input("Total Budget ($)", min_value=0.0, value=2000.0)
+        total_budget = st.number_input("Total Budget (₹)", min_value=0.0, value=50000.0)
         
         conn = get_connection()
         master_members = pd.read_sql("SELECT id, name FROM family_members ORDER BY name;", conn)
