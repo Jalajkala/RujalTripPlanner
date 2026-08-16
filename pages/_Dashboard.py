@@ -3,8 +3,6 @@ import psycopg2
 import pandas as pd
 from datetime import date
 
-st.title("📊 Trip Master Summary Dashboard")
-
 if not st.session_state.get("active_trip_id"):
     st.warning("⚠️ Please select an active trip from the main Home page first!")
     st.stop()
@@ -29,9 +27,9 @@ if df_trip.empty:
 
 active_trip = df_trip.iloc[0]
 
-# --- 1. Trip Details & Countdown ---
-st.subheader(f"🎉 {active_trip['title']}")
-col1, col2, col3 = st.columns(3)
+# --- Modern Header Section ---
+st.title(f"Trip : {active_trip['title']}")
+st.markdown(f"### 📍 Destination: **{active_trip['destination']}**")
 
 try:
     start_dt = pd.to_datetime(active_trip['start_date']).date()
@@ -39,122 +37,126 @@ try:
 except Exception:
     days_to_trip = 0
 
+try:
+    conn = get_connection()
+    exp_sum = pd.read_sql("SELECT SUM(amount) as total FROM expenses WHERE trip_id = %s;", conn, params=(active_trip_id,)).iloc[0]['total']
+    conn.close()
+    total_spent = exp_sum if exp_sum else 0.0
+except Exception:
+    total_spent = 0.0
+
+# Top Metric Cards layout using modern containers
+col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("Countdown", f"{days_to_trip} Days" if days_to_trip >= 0 else "Trip Started/Ended")
-    st.write(f"**Dates:** {active_trip['start_date']} to {active_trip['end_date']}")
-
+    with st.container(border=True):
+        st.metric("⏳ Countdown", f"{days_to_trip} Days" if days_to_trip >= 0 else "Trip Completed")
 with col2:
-    st.metric("Destination", active_trip['destination'])
-    st.metric("Total Budget", f"₹{active_trip['total_budget']:,.2f}" if active_trip['total_budget'] else "₹0.00")
-
+    with st.container(border=True):
+        st.metric("📅 Travel Dates", f"{active_trip['start_date']} to {active_trip['end_date']}")
 with col3:
-    try:
-        conn = get_connection()
-        exp_sum = pd.read_sql("SELECT SUM(amount) as total FROM expenses WHERE trip_id = %s;", conn, params=(active_trip_id,)).iloc[0]['total']
-        conn.close()
-        total_spent = exp_sum if exp_sum else 0.0
-    except Exception:
-        total_spent = 0.0
-    st.metric("Total Expenses Incurred", f"₹{total_spent:,.2f}")
+    with st.container(border=True):
+        st.metric("💸 Total Expenses Incurred", f"₹{total_spent:,.2f}")
 
-st.divider()
+st.markdown("<br>", unsafe_allow_html=True)
 
-# --- 2. People Going on Trip ---
-st.markdown("### 👥 Participants on this Trip")
-try:
-    conn = get_connection()
-    trip_members_df = pd.read_sql("""
-        SELECT fm.name, fm.email, fm.phone 
-        FROM trip_members tm 
-        JOIN family_members fm ON tm.family_member_id = fm.id 
-        WHERE tm.trip_id = %s;
-    """, conn, params=(active_trip_id,))
-    conn.close()
-except Exception:
-    trip_members_df = pd.DataFrame()
+# --- Two Column Modern Card Layout ---
+left_col, right_col = st.columns([1, 1], gap="large")
 
-if trip_members_df.empty:
-    st.info("No members assigned to this trip yet.")
-else:
-    st.dataframe(trip_members_df, hide_index=True)
+with left_col:
+    # Participants Card
+    with st.container(border=True):
+        st.markdown("### 👥 Participants")
+        try:
+            conn = get_connection()
+            trip_members_df = pd.read_sql("""
+                SELECT fm.name, fm.email, fm.phone 
+                FROM trip_members tm 
+                JOIN family_members fm ON tm.family_member_id = fm.id 
+                WHERE tm.trip_id = %s;
+            """, conn, params=(active_trip_id,))
+            conn.close()
+        except Exception:
+            trip_members_df = pd.DataFrame()
 
-st.divider()
+        if trip_members_df.empty:
+            st.info("No members assigned to this trip yet.")
+        else:
+            st.dataframe(trip_members_df, hide_index=True, use_container_width=True)
 
-# --- 3. Checklist Status ---
-st.markdown("### ✅ Checklist Status")
-try:
-    conn = get_connection()
-    tasks_df = pd.read_sql("""
-        SELECT c.task, c.category, fm.name as assigned_to, c.is_completed 
-        FROM checklist c 
-        LEFT JOIN family_members fm ON c.assigned_to = fm.id 
-        WHERE c.trip_id = %s;
-    """, conn, params=(active_trip_id,))
-    conn.close()
-except Exception:
-    tasks_df = pd.DataFrame()
+    # Hotel Bookings Card
+    with st.container(border=True):
+        st.markdown("### 🏨 Hotel Bookings")
+        try:
+            conn = get_connection()
+            hotels_df = pd.read_sql("SELECT hotel_name, address, check_in, check_out, confirmation_code, total_cost FROM hotels WHERE trip_id = %s;", conn, params=(active_trip_id,))
+            conn.close()
+        except Exception:
+            hotels_df = pd.DataFrame()
 
-if not tasks_df.empty:
-    total_tasks = len(tasks_df)
-    completed_tasks = int(tasks_df['is_completed'].sum())
-    progress_val = float(completed_tasks / total_tasks) if total_tasks > 0 else 0.0
-    
-    st.progress(progress_val)
-    st.write(f"**Progress:** {completed_tasks} of {total_tasks} tasks completed.")
-    st.dataframe(tasks_df, hide_index=True)
-else:
-    st.info("No preparation tasks added yet.")
+        if not hotels_df.empty:
+            st.dataframe(hotels_df, hide_index=True, use_container_width=True)
+        else:
+            st.info("No hotel bookings added yet.")
 
-st.divider()
+    # Travel Bookings Card
+    with st.container(border=True):
+        st.markdown("### ✈️ Travel Bookings")
+        try:
+            conn = get_connection()
+            travel_df = pd.read_sql("SELECT transport_type, provider, departure_time, arrival_time, reference_code, cost FROM travel WHERE trip_id = %s;", conn, params=(active_trip_id,))
+            conn.close()
+        except Exception:
+            travel_df = pd.DataFrame()
 
-# --- 4. Hotel Bookings ---
-st.markdown("### 🏨 Hotel Bookings So Far")
-try:
-    conn = get_connection()
-    hotels_df = pd.read_sql("SELECT hotel_name, address, check_in, check_out, confirmation_code, total_cost FROM hotels WHERE trip_id = %s;", conn, params=(active_trip_id,))
-    conn.close()
-except Exception:
-    hotels_df = pd.DataFrame()
+        if not travel_df.empty:
+            st.dataframe(travel_df, hide_index=True, use_container_width=True)
+        else:
+            st.info("No travel bookings added yet.")
 
-if not hotels_df.empty:
-    st.dataframe(hotels_df, hide_index=True)
-else:
-    st.info("No hotel bookings added yet.")
+with right_col:
+    # Checklist Card
+    with st.container(border=True):
+        st.markdown("### ✅ Checklist Progress")
+        try:
+            conn = get_connection()
+            tasks_df = pd.read_sql("""
+                SELECT c.task, c.category, fm.name as assigned_to, c.status 
+                FROM checklist c 
+                LEFT JOIN family_members fm ON c.assigned_to = fm.id 
+                WHERE c.trip_id = %s;
+            """, conn, params=(active_trip_id,))
+            conn.close()
+        except Exception:
+            tasks_df = pd.DataFrame()
 
-st.divider()
+        if not tasks_df.empty:
+            total_tasks = len(tasks_df)
+            completed_tasks = int((tasks_df['status'] == 'Completed').sum())
+            progress_val = float(completed_tasks / total_tasks) if total_tasks > 0 else 0.0
+            
+            st.progress(progress_val)
+            st.caption(f"**{completed_tasks}** of **{total_tasks}** tasks completed.")
+            st.dataframe(tasks_df, hide_index=True, use_container_width=True)
+        else:
+            st.info("No preparation tasks added yet.")
 
-# --- 5. Travel Bookings ---
-st.markdown("### ✈️ Travel Bookings So Far")
-try:
-    conn = get_connection()
-    travel_df = pd.read_sql("SELECT transport_type, provider, departure_time, arrival_time, reference_code, cost FROM travel WHERE trip_id = %s;", conn, params=(active_trip_id,))
-    conn.close()
-except Exception:
-    travel_df = pd.DataFrame()
+    # Itinerary Card
+    with st.container(border=True):
+        st.markdown("### 🗺️ Itinerary Highlights")
+        try:
+            conn = get_connection()
+            itinerary_df = pd.read_sql("SELECT day_date, activity_title, location, description FROM itinerary WHERE trip_id = %s ORDER BY day_date ASC;", conn, params=(active_trip_id,))
+            conn.close()
+        except Exception:
+            itinerary_df = pd.DataFrame()
 
-if not travel_df.empty:
-    st.dataframe(travel_df, hide_index=True)
-else:
-    st.info("No travel bookings added yet.")
-
-st.divider()
-
-# --- 6. Itinerary Summary ---
-st.markdown("### 🗺️ Itinerary Overview")
-try:
-    conn = get_connection()
-    itinerary_df = pd.read_sql("SELECT day_date, activity_title, location, description FROM itinerary WHERE trip_id = %s ORDER BY day_date ASC;", conn, params=(active_trip_id,))
-    conn.close()
-except Exception:
-    itinerary_df = pd.DataFrame()
-
-if not itinerary_df.empty:
-    itinerary_df['day_date'] = pd.to_datetime(itinerary_df['day_date']).dt.date
-    for day, group in itinerary_df.groupby("day_date"):
-        st.markdown(f"**📅 {day}**")
-        for _, row in group.iterrows():
-            loc_str = f" @ *{row['location']}*" if row.get('location') else ""
-            desc_str = f": {row['description']}" if row.get('description') else ""
-            st.write(f"- **{row['activity_title']}**{loc_str}{desc_str}")
-else:
-    st.info("No itinerary activities planned yet.")
+        if not itinerary_df.empty:
+            itinerary_df['day_date'] = pd.to_datetime(itinerary_df['day_date']).dt.date
+            for day, group in itinerary_df.groupby("day_date"):
+                st.markdown(f"**📅 {day}**")
+                for _, row in group.iterrows():
+                    loc_str = f" @ *{row['location']}*" if row.get('location') else ""
+                    desc_str = f": {row['description']}" if row.get('description') else ""
+                    st.write(f"- **{row['activity_title']}**{loc_str}{desc_str}")
+        else:
+            st.info("No itinerary activities planned yet.")
