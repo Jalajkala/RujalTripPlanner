@@ -155,11 +155,11 @@ with right_col:
             # Styling function for status color coding
             def color_status(val):
                 if val == 'Completed':
-                    return 'color: #1b5e20; background-color: #e8f5e9; font-weight: bold;'  # Green
+                    return 'color: #1b5e20; font-weight: bold;'  # Green
                 elif val == 'Pending':
-                    return 'color: #e65100; background-color: #fff3e0; font-weight: bold;'  # Amber/Orange
+                    return 'color: #e65100; font-weight: bold;'  # Amber/Orange
                 elif val == 'In Progress':
-                    return 'color: #0d47a1; background-color: #e3f2fd; font-weight: bold;'  # Blue
+                    return 'color: #0d47a1; font-weight: bold;'  # Blue
                 return ''
 
             if 'status' in tasks_df.columns:
