@@ -22,7 +22,7 @@ with st.form("add_hotel_form", clear_on_submit=True):
     check_in = h3.date_input("Check-In Date")
     check_out = h4.date_input("Check-Out Date")
     conf_code = h5.text_input("Confirmation Code")
-    cost = h6.number_input("Total Cost ($)", min_value=0.0)
+    cost = h6.number_input("Total Cost (₹)", min_value=0.0)
     
     if st.form_submit_button("Add Hotel"):
         conn = get_connection()
