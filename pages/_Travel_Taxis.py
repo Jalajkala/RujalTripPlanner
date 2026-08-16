@@ -23,7 +23,7 @@ with st.form("add_travel_form", clear_on_submit=True):
     t4, t5, t6 = st.columns(3)
     dep_time = t4.text_input("Departure Time (YYYY-MM-DD HH:MM)", value=str(datetime.now().strftime("%Y-%m-%d %H:%M")))
     arr_time = t5.text_input("Arrival Time (YYYY-MM-DD HH:MM)", value=str(datetime.now().strftime("%Y-%m-%d %H:%M")))
-    cost = t6.number_input("Cost ($)", min_value=0.0)
+    cost = t6.number_input("Cost (₹)", min_value=0.0)
     
     if st.form_submit_button("Add Booking"):
         conn = get_connection()
